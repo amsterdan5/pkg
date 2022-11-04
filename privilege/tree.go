@@ -1,6 +1,7 @@
 package privilege
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -13,6 +14,8 @@ type methodTrees []methodTree
 
 // 返回节点
 func (m methodTrees) get(method string) *node {
+	method = strings.ToLower(method)
+
 	for _, t := range m {
 		if t.method == method {
 			return t.tree
@@ -41,19 +44,20 @@ type node struct {
 	fullPath  string   // 原始路径
 	indices   string   // 节点与子节点分裂的第一个字符
 	children  []*node  // 子节点
+	valid     bool     // 是否有效路由
 }
 
 // 添加权限
 // 参数：
 //   path 路由
-func (n *node) addPrivilege(path string) {
+func (n *node) addPrivilege(path string, valid bool) {
 	fullPath := path
 	n.priority++
 	numParams := countParams(path)
 
 	// 创建根节点
 	if len(n.path) == 0 && len(n.children) == 0 {
-		n.insertChild(numParams, path, fullPath)
+		n.insertChild(numParams, path, fullPath, valid)
 		n.nType = root
 		return
 	}
@@ -158,7 +162,7 @@ insert:
 				n.incrementChildPrio(len(n.indices) - 1)
 				n = child
 			}
-			n.insertChild(numParams, path, fullPath)
+			n.insertChild(numParams, path, fullPath, valid)
 			return
 		}
 		return
@@ -171,7 +175,7 @@ insert:
 //   numParms 路由长度
 //   path     当前路由
 //   fullPath 原始路由
-func (n *node) insertChild(numParams uint8, path, fullPath string) {
+func (n *node) insertChild(numParams uint8, path, fullPath string, valid bool) {
 	for numParams > 0 {
 		wildcard, position, valid := findWildcard(path)
 		if position < 0 {
@@ -223,6 +227,7 @@ func (n *node) insertChild(numParams uint8, path, fullPath string) {
 				n = child
 				continue
 			}
+			n.valid = valid
 			return
 		}
 
@@ -263,6 +268,7 @@ func (n *node) insertChild(numParams uint8, path, fullPath string) {
 			path:      path[position:],
 			nType:     catchAll,
 			maxParams: 1,
+			valid:     valid,
 			priority:  1,
 			fullPath:  fullPath,
 		}
@@ -274,6 +280,7 @@ func (n *node) insertChild(numParams uint8, path, fullPath string) {
 	// 没有通配符，直接插入节点
 	n.path = path
 	n.fullPath = fullPath
+	n.valid = valid
 }
 
 // 提升子节点层级
@@ -353,7 +360,13 @@ func (n *node) checkPrivilege(path string) bool {
 walk:
 	for {
 		prefix := n.path
+		fmt.Println("prefix", prefix)
 		if path == prefix {
+			// 当前路由有效
+			if n.valid {
+				return true
+			}
+
 			if path == "/" && n.wildChild && n.nType != root {
 				return true
 			}
@@ -361,24 +374,21 @@ walk:
 			indices := n.indices
 			indLen := len(indices)
 			// 是否有公共前缀
-			if indLen > 0 {
-				for i := 0; i < indLen; i++ {
-					if indices[i] == '/' {
-						n = n.children[i]
-						if n.nType == catchAll {
-							return true
-						}
+			for i := 0; i < indLen; i++ {
+				if indices[i] == '/' {
+					n = n.children[i]
+					if n.nType == catchAll {
+						return true
 					}
 				}
-			} else {
-				return true
 			}
 
-			return false
+			return n.valid
 		}
 
 		// 循环查找
 		if len(path) > len(prefix) && path[:len(prefix)] == prefix {
+			fmt.Println("进入循环")
 			path = path[len(prefix):]
 			// 非通配符情况循环匹配
 			if !n.wildChild {
@@ -392,7 +402,7 @@ walk:
 				}
 
 				// 查看是否 / 结尾
-				return path == "/"
+				return path == "/" && n.valid
 			}
 
 			// 查找节点
@@ -416,12 +426,16 @@ walk:
 					return len(path) == end+1
 				}
 
+				if n.valid {
+					return true
+				}
+
 				if len(n.children) == 1 {
 					// 查看是否 / 结尾
 					n = n.children[0]
-					return n.path == "/"
+					return n.path == "/" && n.valid
 				}
-				return true
+				return false
 
 			case catchAll:
 				return true
@@ -433,6 +447,6 @@ walk:
 		// 根目录 或 请求地址最后多个 /f
 		return (path == "/") ||
 			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
-				path == prefix[:len(prefix)-1])
+				path == prefix[:len(prefix)-1] && n.valid)
 	}
 }

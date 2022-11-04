@@ -7,8 +7,8 @@ import (
 
 func TestInsertChild(t *testing.T) {
 	n := &node{}
-	n.addPrivilege("/admin/add/1")
-	n.addPrivilege("/admin/1")
+	n.addPrivilege("/admin/:name", true)
+	n.addPrivilege("/admin/:name/1", true)
 
 	// 打印所有节点信息
 gg:

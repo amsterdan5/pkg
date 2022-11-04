@@ -22,5 +22,10 @@ func (p *userPrivilege) AddPrivilege(method, path string) {
 		p.privilege = append(p.privilege, methodTree{method: method, tree: root})
 	}
 
-	root.addPrivilege(path)
+	root.addPrivilege(path, true)
+}
+
+// 返回节点
+func (p *userPrivilege) GetNode(method string) *node {
+	return p.privilege.get(method)
 }

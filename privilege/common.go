@@ -28,8 +28,9 @@ func CheckMethod(method string) bool {
 		"GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH",
 	}
 
+	method = strings.ToUpper(method)
 	for _, m := range methods {
-		if m == strings.ToLower(method) {
+		if m == method {
 			return true
 		}
 	}

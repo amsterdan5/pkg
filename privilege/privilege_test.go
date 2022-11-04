@@ -10,7 +10,7 @@ func TestNewPrivilege(t *testing.T) {
 
 	routes := []string{
 		"/admin/:name",
-		"/adminadd",
+		"/admin/:name/add",
 	}
 
 	apis := map[string][]string{
@@ -25,6 +25,6 @@ func TestNewPrivilege(t *testing.T) {
 		}
 	}
 
-	fmt.Println(p.privilege.get("get").checkPrivilege("/admin"))
+	fmt.Println(p.GetNode("get").checkPrivilege("/admin"))
 
 }
