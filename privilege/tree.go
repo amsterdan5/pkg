@@ -1,7 +1,6 @@
 package privilege
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -360,7 +359,6 @@ func (n *node) checkPrivilege(path string) bool {
 walk:
 	for {
 		prefix := n.path
-		fmt.Println("prefix", prefix)
 		if path == prefix {
 			// 当前路由有效
 			if n.valid {
@@ -388,7 +386,6 @@ walk:
 
 		// 循环查找
 		if len(path) > len(prefix) && path[:len(prefix)] == prefix {
-			fmt.Println("进入循环")
 			path = path[len(prefix):]
 			// 非通配符情况循环匹配
 			if !n.wildChild {
