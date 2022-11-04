@@ -164,6 +164,7 @@ insert:
 			n.insertChild(numParams, path, fullPath, valid)
 			return
 		}
+		n.valid = valid
 		return
 	}
 

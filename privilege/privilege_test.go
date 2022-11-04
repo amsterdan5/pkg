@@ -9,8 +9,8 @@ func TestNewPrivilege(t *testing.T) {
 	p := NewPrivilege(1)
 
 	routes := []string{
-		"/admin/:name",
 		"/admin/:name/add",
+		"/admin/:name",
 	}
 
 	apis := map[string][]string{
@@ -25,6 +25,6 @@ func TestNewPrivilege(t *testing.T) {
 		}
 	}
 
-	fmt.Println(p.CheckPrivilege("get", "/admin"))
+	fmt.Println(p.CheckPrivilege("get", "/admin/1"))
 
 }

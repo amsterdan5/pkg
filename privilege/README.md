@@ -24,12 +24,3 @@ for method, api := range apis {
 
 fmt.Println(p.privilege.get("get").checkPrivilege("/admin"))
 ```
-
-### 注意
-> 同一http请求下，有多个类似的通配符，需要把最短的放在最前面
-```
-routes := []string{
-	"/admin/:name",
-	"/admin/:name/1",
-}
-```
