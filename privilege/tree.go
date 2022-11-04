@@ -71,7 +71,7 @@ insert:
 		}
 
 		// 查找公共前缀
-		i := LongesCommonPrefix(path, n.path)
+		i := longesCommonPrefix(path, n.path)
 
 		// 处理子节点内容
 		if i < len(n.path) {

@@ -18,13 +18,13 @@ func TestNewPrivilege(t *testing.T) {
 	}
 
 	for method, api := range apis {
-		if CheckMethod(method) {
+		if checkMethod(method) {
 			for _, a := range api {
 				p.AddPrivilege(method, a)
 			}
 		}
 	}
 
-	fmt.Println(p.GetNode("get").checkPrivilege("/admin"))
+	fmt.Println(p.CheckPrivilege("get", "/admin"))
 
 }

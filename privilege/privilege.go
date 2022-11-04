@@ -29,3 +29,11 @@ func (p *userPrivilege) AddPrivilege(method, path string) {
 func (p *userPrivilege) GetNode(method string) *node {
 	return p.privilege.get(method)
 }
+
+// 鉴权方法
+func (p *userPrivilege) CheckPrivilege(method, path string) bool {
+	if pn := p.privilege.get(method); pn != nil {
+		return pn.checkPrivilege(path)
+	}
+	return false
+}
