@@ -3,7 +3,7 @@ package privilege
 import "strings"
 
 // 返回最小值
-func Min(a, b int) int {
+func min(a, b int) int {
 	if a <= b {
 		return a
 	}
@@ -13,7 +13,7 @@ func Min(a, b int) int {
 // 查找公共前缀
 func longesCommonPrefix(a, b string) int {
 	i := 0
-	max := Min(len(a), len(b))
+	max := min(len(a), len(b))
 	for i < max && a[i] == b[i] {
 		i++
 	}

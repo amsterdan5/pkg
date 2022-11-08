@@ -6,8 +6,6 @@ import (
 )
 
 func TestNewPrivilege(t *testing.T) {
-	p := NewPrivilege(1)
-
 	routes := []string{
 		"/admin/:name/add",
 		"/admin/:name",
@@ -17,13 +15,7 @@ func TestNewPrivilege(t *testing.T) {
 		"get": routes,
 	}
 
-	for method, api := range apis {
-		if checkMethod(method) {
-			for _, a := range api {
-				p.AddPrivilege(method, a)
-			}
-		}
-	}
+	p := NewPrivilege(1, apis)
 
 	fmt.Println(p.CheckPrivilege("get", "/admin/1"))
 

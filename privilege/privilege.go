@@ -1,16 +1,46 @@
 package privilege
 
+import (
+	"sync"
+)
+
+var (
+	// 用户权限列表
+	userPrivilegeList = make(map[uint]*userPrivilege)
+	// 锁
+	syncP sync.Mutex
+)
+
 type userPrivilege struct {
-	Uid       int
 	privilege methodTrees
 }
 
 // 新建权限
-func NewPrivilege(uid int) *userPrivilege {
-	return &userPrivilege{
-		Uid:       uid,
+func NewPrivilege(uid uint, authList map[string][]string) *userPrivilege {
+	if p, ok := userPrivilegeList[uid]; ok {
+		return p
+	}
+
+	return refreshUserPrivilege(uid, authList)
+}
+
+// 刷新权限树
+func refreshUserPrivilege(uid uint, authList map[string][]string) *userPrivilege {
+	syncP.Lock()
+
+	p := &userPrivilege{
 		privilege: make(methodTrees, 0, 9),
 	}
+
+	for m, uris := range authList {
+		for _, path := range uris {
+			p.AddPrivilege(m, path)
+		}
+	}
+
+	userPrivilegeList[uid] = p
+	syncP.Unlock()
+	return p
 }
 
 // 检查权限
