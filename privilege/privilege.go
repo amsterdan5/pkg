@@ -33,6 +33,10 @@ func refreshUserPrivilege(uid uint, authList map[string][]string) *userPrivilege
 	}
 
 	for m, uris := range authList {
+		if !checkMethod(m) {
+			panic("存在无效方法")
+		}
+
 		for _, path := range uris {
 			p.AddPrivilege(m, path)
 		}
@@ -43,7 +47,7 @@ func refreshUserPrivilege(uid uint, authList map[string][]string) *userPrivilege
 	return p
 }
 
-// 检查权限
+// 添加权限
 func (p *userPrivilege) AddPrivilege(method, path string) {
 	root := p.privilege.get(method)
 	if root == nil {
