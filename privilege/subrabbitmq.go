@@ -19,17 +19,19 @@ type rabbitmqManage struct {
 	exchangeType string // 交换机类型
 }
 
+// 发布
 func (m *rabbitmqManage) publish(key, data string) (bool, error) {
-	m.queueName = key
-
 	if m.channel == nil {
 		m.connect(m.addr)
 	}
 
+	// 声明交换机
 	m.declareExchange()
 
+	// 声明队列
 	m.declareQueue()
 
+	// 开始发布
 	err := m.channel.Publish(m.exchangeName, "", false, false, amqp.Publishing{
 		ContentType: "text/plain",
 		Body:        []byte(data),
@@ -43,22 +45,32 @@ func (m *rabbitmqManage) publish(key, data string) (bool, error) {
 	return true, nil
 }
 
+// 订阅
 func (m *rabbitmqManage) sublish(key string, recevier chan string) {
-	m.queueName = key
+	if key == "" {
+		panic("队列名不能为空")
+	}
+
+	// 设置队列名
+	m.queueName = m.setQueue(key)
 
 	if m.channel == nil {
 		m.connect(m.addr)
 	}
 
+	// 声明交换机
 	m.declareExchange()
 
+	// 声明队列
 	m.declareQueue()
 
+	// 队列绑定交换机
 	err := m.channel.QueueBind(m.queueName, "", m.exchangeName, false, nil)
 	if err != nil {
 		panic(err)
 	}
 
+	// 开始接收
 	messages, err := m.channel.Consume(m.queueName, "", true, false, false, false, nil)
 	if err != nil {
 		panic(err)
@@ -75,9 +87,11 @@ func (m *rabbitmqManage) sublish(key string, recevier chan string) {
 
 func newRabbitmqManage(c ManageConfig) *rabbitmqManage {
 	m := new(rabbitmqManage)
+
 	m.addr = fmt.Sprintf("amqp://%s:%s@%s:%s", c.UserName, c.Password, c.Addr, c.Port)
-	m.exchangeName = "test_exchange"
+	m.exchangeName = "auth_privilege"
 	m.exchangeType = "fanout"
+
 	m.connect(m.addr)
 
 	return m
@@ -113,12 +127,13 @@ func (m *rabbitmqManage) declareQueue() {
 func (m *rabbitmqManage) declareExchange() {
 	err := m.channel.ExchangeDeclare(m.exchangeName, m.exchangeType, true, false, false, false, nil)
 	if err != nil {
+		log.Println("声明交换机失败, ", err)
 		panic(err)
 	}
 }
 
 // 关闭请求
-func (m *rabbitmqManage) close() {
+func (m *rabbitmqManage) Close() {
 	if m.channel != nil {
 		if err := m.channel.Close(); err != nil {
 			log.Println("rabbimq关闭通道失败, ", err)

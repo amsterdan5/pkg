@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	once sync.Once
-	m    manageInterface
+	once        sync.Once
+	m           manageInterface
+	queuePrefix = "auth_priv_"
 )
 
 // 发布订阅接口
@@ -66,6 +67,11 @@ func (m *manage) Do(uid uint) bool {
 
 	refreshUserPrivilege(uid, m.f())
 	return true
+}
+
+// 设置队列名
+func (m *manage) setQueue(key string) string {
+	return queuePrefix + key
 }
 
 // 配置管理
