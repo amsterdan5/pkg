@@ -10,17 +10,19 @@ import (
 
 var (
 	once sync.Once
-	m    manage
+	m    manageInterface
 )
 
 // 发布订阅接口
-type manage interface {
+type manageInterface interface {
 	// 发布
 	publish(key, data string) (bool, error)
 	// 订阅
-	sublish(key string) chan string
+	sublish(key string, s chan string)
+	// 设置上下文
+	SetCtx(c context.Context)
 	// 设置方法
-	SetFunc(f ManageFunc) manage
+	SetFunc(f ManageFunc)
 	// 执行方法
 	Do(uid uint) bool
 }
@@ -29,15 +31,41 @@ type manage interface {
 // 	p       manage  管理类型
 // 	key     string  订阅字段
 // 	data    string  发布内容
-func Publish(p manage, key, data string) (bool, error) {
+func Publish(p manageInterface, key, data string) (bool, error) {
 	return p.publish(key, data)
 }
 
 // 订阅消息
 // 	p       manage  管理类型
 // 	key     string  订阅字段
-func Subscribe(p manage, key string) chan string {
-	return p.sublish(key)
+func Subscribe(p manageInterface, key string, recevier chan string) {
+	p.sublish(key, recevier)
+}
+
+// 公共参数
+type manage struct {
+	f   ManageFunc
+	ctx context.Context
+}
+
+// 设置上下文
+func (m *manage) SetCtx(c context.Context) {
+	m.ctx = c
+}
+
+// 设置方法
+func (m *manage) SetFunc(f ManageFunc) {
+	m.f = f
+}
+
+// 执行方法
+func (m *manage) Do(uid uint) bool {
+	if m.f == nil {
+		panic(errors.New("缺少数据来源方法"))
+	}
+
+	refreshUserPrivilege(uid, m.f())
+	return true
 }
 
 // 配置管理
@@ -49,28 +77,13 @@ type ManageConfig struct {
 	Password string
 }
 
-// 自定义方法
-type ManageFunc func() map[string][]string
-
-// redis订阅类
-func (c *ManageConfig) newRedisManage() manage {
-	once.Do(func() {
-		m = redisManage{
-			ctx: context.Background(),
-			rdb: redis.NewClient(&redis.Options{
-				Addr: c.Addr + ":" + c.Port,
-			}),
-		}
-	})
-
-	return m
-}
-
 // 订阅类
-func NewManage(c *ManageConfig) (m manage) {
+func NewManage(c ManageConfig) (m manageInterface) {
 	switch c.Type {
 	case "redis":
 		m = c.newRedisManage()
+	case "rabbitmq":
+		m = c.newRabbitmqManage()
 	default:
 		panic("未找到方法")
 	}
@@ -78,42 +91,29 @@ func NewManage(c *ManageConfig) (m manage) {
 	return
 }
 
-type redisManage struct {
-	ctx context.Context
-	rdb *redis.Client
-	f   ManageFunc
-}
+// 自定义方法
+type ManageFunc func() map[string][]string
 
-// 发布消息
-func (r redisManage) publish(key, data string) (bool, error) {
-	res := r.rdb.Publish(r.ctx, key, data)
-	if res.Err() != nil {
-		return false, res.Err()
-	}
-	return true, nil
-}
+// redis订阅类
+func (c ManageConfig) newRedisManage() manageInterface {
+	once.Do(func() {
+		m = &redisManage{
+			rdb: redis.NewClient(&redis.Options{
+				Addr: c.Addr + ":" + c.Port,
+			}),
+		}
 
-// 订阅消息
-func (r redisManage) sublish(key string) chan string {
-	message := <-r.rdb.Subscribe(r.ctx, key).Channel()
+		m.SetCtx(context.Background())
+	})
 
-	m := make(chan string)
-	m <- message.Payload
 	return m
 }
 
-// 设置数据来源方法
-func (r redisManage) SetFunc(f ManageFunc) manage {
-	r.f = f
-	return r
-}
+// mq订阅类
+func (c ManageConfig) newRabbitmqManage() manageInterface {
+	once.Do(func() {
+		m = newRabbitmqManage(c)
+	})
 
-// 刷新权限
-func (r redisManage) Do(uid uint) bool {
-	if r.f == nil {
-		panic(errors.New("缺少数据来源方法"))
-	}
-
-	refreshUserPrivilege(uid, r.f())
-	return true
+	return m
 }

@@ -28,6 +28,7 @@ fmt.Println(p.privilege.get("get").checkPrivilege("/admin"))
 ### 增加发布订阅方式
 > 发布订阅用于异步通知更新
 
+>> 使用redis
 #### 发布端
 ```
 c := &ManageConfig{
@@ -44,14 +45,18 @@ fmt.Println(ok)
 
 #### 订阅端
 ```
-c := &ManageConfig{
+c := privilege.ManageConfig{
 	Type: "redis",
 	Addr: "127.0.0.1",
 	Port: "6379",
 }
-m := NewManage(c)
-msg := Subscribe(m, key)
-fmt.Println(msg, 1)
+
+msg := make(chan string)
+go privilege.Subscribe(privilege.NewManage(c), key, msg)
+
+for m := range msg {
+	fmt.Println(m)
+}
 
 f := func() map[string][]string {
 	data := map[string][]string{
@@ -62,4 +67,38 @@ f := func() map[string][]string {
 	return data
 }
 fmt.Println(m.SetFunc(f).Do(1))
+```
+>> 使用rabbitmq
+#### 发布端
+```
+c := privilege.ManageConfig{
+	Type:     "rabbitmq",
+	Addr:     "www.local.com",
+	Port:     "5672",
+	UserName: "myuser",
+	Password: "mypass",
+}
+_, err := privilege.Publish(privilege.NewManage(c), "queue", "test mq")
+if err != nil {
+	fmt.Println(err)
+}
+```
+#### 订阅端
+```
+c := privilege.ManageConfig{
+	Type:     "rabbitmq",
+	Addr:     "www.local.com",
+	Port:     "5672",
+	UserName: "myuser",
+	Password: "mypass",
+}
+
+msg := make(chan string)
+go privilege.Subscribe(privilege.NewManage(c), "queue", msg)
+for {
+	select {
+	case mm := <-msg:
+		fmt.Println(mm)
+	}
+}
 ```

@@ -20,7 +20,7 @@ func TestStart(t *testing.T) {
 }
 
 func testPublish() {
-	c := &ManageConfig{
+	c := ManageConfig{
 		Type: "redis",
 		Addr: "127.0.0.1",
 		Port: "6379",
@@ -32,18 +32,20 @@ func testPublish() {
 }
 
 func testSubscribe() {
-	c := &ManageConfig{
+	c := ManageConfig{
 		Type: "redis",
 		Addr: "127.0.0.1",
 		Port: "6379",
 	}
-	msg := Subscribe(NewManage(c), key)
-	fmt.Println(msg, 1)
+
+	msg := make(chan string)
+	Subscribe(NewManage(c), key, msg)
+	fmt.Println(<-msg)
 }
 
 func TestFunc(t *testing.T) {
 
-	c := &ManageConfig{
+	c := ManageConfig{
 		Type: "redis",
 		Addr: "127.0.0.1",
 		Port: "6379",
@@ -58,5 +60,6 @@ func TestFunc(t *testing.T) {
 		}
 		return data
 	}
-	fmt.Println(m.SetFunc(f).Do(1))
+	m.SetFunc(f)
+	fmt.Println(m.Do(1))
 }

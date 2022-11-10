@@ -1,8 +1,11 @@
-module github.com/amsterdan/privilege
+module github.com/amsterdan/pkg
 
 go 1.18
 
-require github.com/go-redis/redis/v8 v8.11.5
+require (
+	github.com/go-redis/redis/v8 v8.11.5
+	github.com/streadway/amqp v1.0.0
+)
 
 require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
