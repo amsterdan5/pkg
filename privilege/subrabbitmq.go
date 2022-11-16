@@ -47,6 +47,8 @@ func (m *rabbitmqManage) publish(key, data string) (bool, error) {
 
 // 订阅
 func (m *rabbitmqManage) sublish(key string, recevier chan string) {
+	defer m.Close()
+
 	if key == "" {
 		panic("队列名不能为空")
 	}
